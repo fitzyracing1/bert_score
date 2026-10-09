@@ -1,4 +1,140 @@
-# BERTScore
+# fitzyracing-bert-score (BERTScore)
+
+> Part of **[360 Bench](https://github.com/fitzyracing1/360-bench)**, tested fixes for abandoned PyPI packages.
+
+[![PyPI](https://img.shields.io/pypi/v/fitzyracing-bert-score.svg)](https://pypi.org/project/fitzyracing-bert-score/)
+
+> **This is a fork of [BERTScore (bert-score)](https://github.com/Tiiiger/bert_score)
+> by [Tianyi Zhang](https://github.com/Tiiiger), Varsha Kishore, Felix Wu, Kilian Q. Weinberger
+> and Yoav Artzi**, and its contributors, published as a drop-in replacement that works with
+> DeBERTa-v3 models on current transformers. The upstream package (~420k downloads a month, and
+> the backend of Hugging Face `evaluate`'s `bertscore` metric) has not been released since 0.3.13
+> (February 2023), and the fix below has sat in an open pull request since July 2026. The import
+> name is still `bert_score`, so no code changes are needed. All credit for the original library
+> goes to its authors and contributors; it remains available under the same MIT license. Please
+> keep citing the [BERTScore paper](https://arxiv.org/abs/1904.09675) as before.
+>
+> If a fixed `bert-score` release appears on PyPI, prefer it and switch back.
+
+
+## What's fixed in this fork
+
+Based on upstream `bert-score==0.3.13` (tag [`v0.3.13`](https://github.com/Tiiiger/bert_score/tree/v0.3.13)).
+The API is unchanged, and so are the scores wherever 0.3.13 worked.
+
+- **No more `OverflowError: int too big to convert` with DeBERTa-v3 and other models whose
+  tokenizer declares no maximum length.** For such tokenizers, transformers reports a
+  placeholder `model_max_length` of 10^30, and bert-score passed it on as `max_length`. The
+  Python ("slow") tokenizers accepted that, but the Rust ("fast") tokenizers can't hold the
+  number and crash. On transformers 4 that happened with `use_fast_tokenizer=True`; on
+  transformers 5, which only has fast tokenizers, it happens every time, for example:
+
+  ```python
+  from bert_score import score
+  score(["hello world"], ["hello world"], model_type="microsoft/deberta-v3-base")
+  # OverflowError: int too big to convert
+  ```
+
+  This hits the DeBERTa-v3 models on bert-score's own model list
+  (`microsoft/deberta-xlarge-mnli`, which its README recommends as the best model, and
+  `microsoft/deberta-v3-xsmall`/`-small`/`-base`/`-large`, `microsoft/mdeberta-v3-base`) and,
+  through `evaluate.load("bertscore")`, everyone using them there. The fork encodes without
+  truncation when the limit is that placeholder, which is exactly what the slow tokenizers did,
+  so you get the same scores 0.3.13 gave with its default slow tokenizer on transformers 4
+  (checked with `microsoft/deberta-v3-xsmall`, including a 700-token input). Tokenizers that do
+  declare a maximum length (`roberta-large`, BERT, ...) are untouched and still truncate to it.
+
+  Upstream issue: [#205](https://github.com/Tiiiger/bert_score/issues/205), also
+  [huggingface/evaluate#739](https://github.com/huggingface/evaluate/issues/739); unmerged PR:
+  [#206](https://github.com/Tiiiger/bert_score/pull/206). Unlike #206, the fork does not
+  truncate these inputs to 512 tokens (DeBERTa-v3 uses relative positions and scored longer
+  inputs in full before) and does not modify your tokenizer object.
+
+- **Packaging:** `pyproject.toml` replaces `setup.py`; dependencies and Python support are
+  unchanged. `bert_score.__version__` still reads `"0.3.12"`, as it did in upstream 0.3.13,
+  so the hash strings (`return_hash=True`) stay the same.
+
+### Known differences on transformers 5 that this fork does not change
+
+These come from transformers 5 itself and affect bert-score 0.3.13 the same way:
+
+- transformers 5 only has fast tokenizers. For RoBERTa- and GPT-2-style models (including the
+  default English model, `roberta-large`) the fast tokenizer doesn't add the leading space
+  that the slow one added, so scores differ slightly from transformers 4 with the default
+  slow tokenizer. This is the known slow/fast difference upstream describes in
+  [#106](https://github.com/Tiiiger/bert_score/issues/106). If you need to reproduce
+  published numbers exactly, use transformers 4 with the default `use_fast_tokenizer=False`.
+- transformers 5 loads a checkpoint in the dtype it was saved in. A few models (for example
+  `microsoft/deberta-v3-xsmall`) are stored in float16 and are therefore run in float16, so
+  their scores can differ from transformers 4 in the 4th decimal place.
+
+
+## Install
+
+```bash
+pip install fitzyracing-bert-score
+```
+
+### Switching from `bert-score`
+
+This distribution installs the same `bert_score` and `bert_score_cli` packages and the
+`bert-score` command as the original, so your code stays the same. **Uninstall the original
+first**, then install the fork:
+
+```bash
+pip uninstall -y bert-score
+pip install fitzyracing-bert-score
+```
+
+The order matters. Both distributions own the same files, so if you install the fork first and
+uninstall `bert-score` afterwards, pip deletes the shared files and the import breaks. If that
+happens, run `pip install --force-reinstall --no-deps fitzyracing-bert-score`.
+
+In `requirements.txt` / `pyproject.toml`, replace `bert-score` (or `bert_score`) with
+`fitzyracing-bert-score`.
+
+### If you get bert-score through another package
+
+pip cannot replace a dependency with a differently named package. If a dependency requires
+`bert-score`, install the fork alongside it and then remove the original's files:
+
+```bash
+pip install fitzyracing-bert-score
+pip uninstall -y bert-score
+pip install --force-reinstall --no-deps fitzyracing-bert-score   # restore the files the uninstall removed
+```
+
+Afterwards `pip check` reports `<package> requires bert-score, which is not installed`; that is
+expected. Repeat the steps if a later install pulls `bert-score` back in. (Hugging Face
+`evaluate` does not declare bert-score as a dependency; it just imports `bert_score`, so with
+`evaluate` the plain switch above is enough.)
+
+**uv users** can do this properly with an override that drops the original:
+
+```toml
+# pyproject.toml
+[project]
+dependencies = ["fitzyracing-bert-score", "...the package that depends on bert-score..."]
+
+[tool.uv]
+override-dependencies = ["bert-score; sys_platform == 'never'"]
+```
+
+(or `uv pip install --override overrides.txt ...` with that same line in `overrides.txt`).
+
+### Tests
+
+```bash
+pip install -e ".[test]"
+pytest tests/test_fork_fixes.py                                  # tiny test model, a few MB
+BERT_SCORE_TEST_REAL_MODEL=1 pytest tests/test_fork_fixes.py     # also microsoft/deberta-v3-xsmall
+```
+
+`tests/test_fork_fixes.py` fails on bert-score 0.3.13 and passes on this fork, on transformers
+4.57 and 5.19. The upstream tests in `tests/` download `roberta-large` (1.4 GB).
+
+
+## BERTScore
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-red.svg)](#python)
 [![arxiv](https://img.shields.io/badge/arXiv-1904.09675-b31b1b.svg)](https://arxiv.org/abs/1904.09675)
 [![PyPI version bert-score](https://badge.fury.io/py/bert-score.svg)](https://pypi.python.org/pypi/bert-score/) [![Downloads](https://pepy.tech/badge/bert-score)](https://pepy.tech/project/bert-score) [![Downloads](https://pepy.tech/badge/bert-score/month)](https://pepy.tech/project/bert-score) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 

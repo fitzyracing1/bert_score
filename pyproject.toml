@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# Published as a separate distribution; the import name stays `bert_score`.
+name = "fitzyracing-bert-score"
+version = "0.3.14"
+description = "PyTorch implementation of BERT score (maintained fork of bert-score that works with DeBERTa-v3 on current transformers)"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Tianyi Zhang" },
+    { name = "Varsha Kishore" },
+    { name = "Felix Wu" },
+    { name = "Kilian Q. Weinberger" },
+    { name = "Yoav Artzi" },
+    { email = "tzhang@asapp.com" },
+]
+maintainers = [{ name = "Joshua Almeida", email = "fitzyracing1@gmail.com" }]
+keywords = ["BERT", "NLP", "deep learning", "google", "metric", "bertscore", "fork"]
+requires-python = ">=3.6"
+dependencies = [
+    "torch>=1.0.0",
+    "pandas>=1.0.1",
+    "transformers>=3.0.0",
+    "numpy",
+    "requests",
+    "tqdm>=4.31.1",
+    "matplotlib",
+    "packaging>=20.9",
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+test = ["pytest", "huggingface_hub"]
+
+[project.scripts]
+bert-score = "bert_score_cli.score:main"
+bert-score-show = "bert_score_cli.visualize:main"
+
+[project.urls]
+Homepage = "https://github.com/fitzyracing1/bert_score"
+Source = "https://github.com/fitzyracing1/bert_score"
+Issues = "https://github.com/fitzyracing1/bert_score/issues"
+Changelog = "https://github.com/fitzyracing1/bert_score/blob/master/CHANGELOG.md"
+Upstream = "https://github.com/Tiiiger/bert_score"
+"360 Bench" = "https://github.com/fitzyracing1/360-bench"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["bert_score*", "bert_score_cli*"]

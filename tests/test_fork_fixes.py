@@ -75,6 +75,15 @@ def test_sent_encode_real_max_length_still_truncates(fast_tokenizer):
     assert len(sent_encode(fast_tokenizer, LONG)) == 16
 
 
+@pytest.mark.parametrize("model", ["microsoft/deberta-xlarge-mnli", "microsoft/deberta-v3-base"])
+def test_recommended_deberta_tokenizers(model):
+    # Only the tokenizer files are downloaded (about 1-2 MB). deberta-xlarge-mnli is the model
+    # the bert-score README recommends; neither tokenizer declares a model_max_length.
+    tok = AutoTokenizer.from_pretrained(model, use_fast=True)
+    assert tok.model_max_length == SENTINEL
+    assert sent_encode(tok, "hello world") == tok.encode("hello world", add_special_tokens=True)
+
+
 def test_score_with_tokenizer_without_max_length_fast(tiny_without_max_length):
     tok = AutoTokenizer.from_pretrained(tiny_without_max_length, use_fast=True)
     assert tok.model_max_length == SENTINEL
@@ -122,4 +131,5 @@ def test_real_deberta_v3(use_fast):
     P, R, F = bert_score.score(CANDS + [LONG], REFS + [LONG + " again"], model_type="microsoft/deberta-v3-xsmall",
                                use_fast_tokenizer=use_fast)
     assert torch.isfinite(F).all()
-    assert F[0].item() == pytest.approx(1.0, abs=1e-5)
+    # transformers 5 loads this checkpoint in float16 (its stored dtype), so allow 1e-3.
+    assert F[0].item() == pytest.approx(1.0, abs=1e-3)

@@ -1,0 +1,15 @@
+BERTScore
+Copyright (c) 2019 Tianyi Zhang, Varsha Kishore, Felix Wu, Kilian Q. Weinberger, and Yoav Artzi.
+Licensed under the MIT License (see LICENSE).
+Original project: https://github.com/Tiiiger/bert_score
+
+fitzyracing-bert-score (part of 360 Bench, https://github.com/fitzyracing1/360-bench)
+Modifications copyright 2026 Joshua Almeida, under the same MIT License.
+
+This distribution is bert-score 0.3.13 with these changes:
+- bert_score/utils.py: when a tokenizer declares no maximum length (transformers' sentinel
+  model_max_length of int(1e30)), encode without truncation instead of passing the sentinel
+  as max_length, which made fast tokenizers raise OverflowError.
+- Packaging: pyproject.toml replaces setup.py; distribution name fitzyracing-bert-score;
+  import names bert_score and bert_score_cli unchanged.
+- Tests: tests/test_fork_fixes.py; README, CHANGELOG and this NOTICE.

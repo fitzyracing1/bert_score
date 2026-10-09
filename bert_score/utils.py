@@ -185,6 +185,21 @@ model2layers = {
 }
 
 
+def _truncation_kwargs(tokenizer):
+    """``max_length``/``truncation`` arguments for ``tokenizer.encode`` (transformers >= 4).
+
+    Tokenizers that don't declare a maximum length (DeBERTa-v3 and others) report
+    transformers' sentinel ``model_max_length`` of int(1e30). Passing that to a fast (Rust)
+    tokenizer raises ``OverflowError: int too big to convert``; on transformers 5 every
+    tokenizer is a fast one. Such a limit can never be reached, so don't truncate, exactly
+    as the slow (Python) tokenizers did with the sentinel.
+    """
+    max_length = tokenizer.model_max_length
+    if max_length is None or max_length > sys.maxsize:
+        return {}
+    return {"max_length": max_length, "truncation": True}
+
+
 def sent_encode(tokenizer, sent):
     "Encoding as sentence based on the tokenizer"
     sent = sent.strip()
@@ -197,8 +212,7 @@ def sent_encode(tokenizer, sent):
                 sent,
                 add_special_tokens=True,
                 add_prefix_space=True,
-                max_length=tokenizer.model_max_length,
-                truncation=True,
+                **_truncation_kwargs(tokenizer),
             )
         elif version.parse(trans_version) >= version.parse("3.0.0"):
             return tokenizer.encode(
@@ -224,8 +238,7 @@ def sent_encode(tokenizer, sent):
             return tokenizer.encode(
                 sent,
                 add_special_tokens=True,
-                max_length=tokenizer.model_max_length,
-                truncation=True,
+                **_truncation_kwargs(tokenizer),
             )
         elif version.parse(trans_version) >= version.parse("3.0.0"):
             return tokenizer.encode(

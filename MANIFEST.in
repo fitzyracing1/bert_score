@@ -1,1 +1,5 @@
 recursive-include bert_score/rescale_baseline *
+include LICENSE
+include NOTICE
+include CHANGELOG.md
+include README.md
