@@ -75,6 +75,9 @@ These come from transformers 5 itself and affect bert-score 0.3.13 the same way:
 pip install fitzyracing-bert-score
 ```
 
+DeBERTa-v3 tokenizers need `sentencepiece` (and, on transformers 5, `protobuf`) installed; that
+is a transformers requirement, the same as with the original package.
+
 ### Switching from `bert-score`
 
 This distribution installs the same `bert_score` and `bert_score_cli` packages and the
