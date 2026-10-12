@@ -378,3 +378,8 @@ Please see this [Google sheet](https://docs.google.com/spreadsheets/d/1RKOVpselB
 ### Acknowledgement
 This repo wouldn't be possible without the awesome
 [bert](https://github.com/google-research/bert), [fairseq](https://github.com/pytorch/fairseq), and [transformers](https://github.com/huggingface/transformers).
+
+## Documentation
+
+- In-repo docs: [docs/](docs/index.md)
+- Wiki: [https://github.com/fitzyracing1/bert_score/wiki](https://github.com/fitzyracing1/bert_score/wiki)
