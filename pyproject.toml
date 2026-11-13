@@ -51,6 +51,7 @@ Issues = "https://github.com/fitzyracing1/bert_score/issues"
 Changelog = "https://github.com/fitzyracing1/bert_score/blob/master/CHANGELOG.md"
 Upstream = "https://github.com/Tiiiger/bert_score"
 "360 Bench" = "https://github.com/fitzyracing1/360-bench"
+Funding = "https://github.com/sponsors/fitzyracing1"
 
 [tool.setuptools]
 include-package-data = true
